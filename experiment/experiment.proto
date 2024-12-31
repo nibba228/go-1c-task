@@ -1,11 +1,12 @@
 syntax = "proto3";
 
-option go_package = ".";
-
 package experiment;
+option go_package = "/experiment";
+
+import "google/protobuf/empty.proto";
 
 service Experiments {
-  rpc Start () returns (StartResponse) {}
+  rpc Start (google.protobuf.Empty) returns (StartResponse) {}
   rpc Register (ClientInfo) returns (RegisterResponse) {}
   rpc MakeGuess (GuessRequest) returns (GuessResponse) {}
 }
@@ -27,5 +28,5 @@ message GuessResponse {
 }
 
 message StartResponse {
-  string msg = 1
+  string msg = 1;
 }
