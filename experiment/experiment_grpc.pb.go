@@ -4,10 +4,11 @@
 // - protoc             v3.12.4
 // source: experiment.proto
 
-package __
+package experiment
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Experiments_Start_FullMethodName     = "/experiment.Experiments/Start"
 	Experiments_Register_FullMethodName  = "/experiment.Experiments/Register"
 	Experiments_MakeGuess_FullMethodName = "/experiment.Experiments/MakeGuess"
 )
@@ -27,7 +29,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExperimentsClient interface {
-	Register(ctx context.Context, in *ClientInfo, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Start(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StartResponse, error)
+	Register(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*RegisterResponse, error)
 	MakeGuess(ctx context.Context, in *GuessRequest, opts ...grpc.CallOption) (*GuessResponse, error)
 }
 
@@ -39,7 +42,17 @@ func NewExperimentsClient(cc grpc.ClientConnInterface) ExperimentsClient {
 	return &experimentsClient{cc}
 }
 
-func (c *experimentsClient) Register(ctx context.Context, in *ClientInfo, opts ...grpc.CallOption) (*RegisterResponse, error) {
+func (c *experimentsClient) Start(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StartResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartResponse)
+	err := c.cc.Invoke(ctx, Experiments_Start_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *experimentsClient) Register(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, Experiments_Register_FullMethodName, in, out, cOpts...)
@@ -63,7 +76,8 @@ func (c *experimentsClient) MakeGuess(ctx context.Context, in *GuessRequest, opt
 // All implementations must embed UnimplementedExperimentsServer
 // for forward compatibility.
 type ExperimentsServer interface {
-	Register(context.Context, *ClientInfo) (*RegisterResponse, error)
+	Start(context.Context, *empty.Empty) (*StartResponse, error)
+	Register(context.Context, *empty.Empty) (*RegisterResponse, error)
 	MakeGuess(context.Context, *GuessRequest) (*GuessResponse, error)
 	mustEmbedUnimplementedExperimentsServer()
 }
@@ -75,7 +89,10 @@ type ExperimentsServer interface {
 // pointer dereference when methods are called.
 type UnimplementedExperimentsServer struct{}
 
-func (UnimplementedExperimentsServer) Register(context.Context, *ClientInfo) (*RegisterResponse, error) {
+func (UnimplementedExperimentsServer) Start(context.Context, *empty.Empty) (*StartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
+}
+func (UnimplementedExperimentsServer) Register(context.Context, *empty.Empty) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedExperimentsServer) MakeGuess(context.Context, *GuessRequest) (*GuessResponse, error) {
@@ -102,8 +119,26 @@ func RegisterExperimentsServer(s grpc.ServiceRegistrar, srv ExperimentsServer) {
 	s.RegisterService(&Experiments_ServiceDesc, srv)
 }
 
+func _Experiments_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExperimentsServer).Start(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Experiments_Start_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExperimentsServer).Start(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Experiments_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClientInfo)
+	in := new(empty.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -115,7 +150,7 @@ func _Experiments_Register_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Experiments_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExperimentsServer).Register(ctx, req.(*ClientInfo))
+		return srv.(ExperimentsServer).Register(ctx, req.(*empty.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -145,6 +180,10 @@ var Experiments_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "experiment.Experiments",
 	HandlerType: (*ExperimentsServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Start",
+			Handler:    _Experiments_Start_Handler,
+		},
 		{
 			MethodName: "Register",
 			Handler:    _Experiments_Register_Handler,
