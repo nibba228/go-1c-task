@@ -7,8 +7,14 @@ import "google/protobuf/empty.proto";
 
 service Experiments {
   rpc Start (google.protobuf.Empty) returns (StartResponse) {}
-  rpc Register (google.protobuf.Empty) returns (RegisterResponse) {}
+  rpc Register (RegisterRequest) returns (RegisterResponse) {}
   rpc MakeGuess (GuessRequest) returns (GuessResponse) {}
+  rpc GetUsers (google.protobuf.Empty) returns (stream UserResponse) {}
+  rpc GetScores (google.protobuf.Empty) returns (stream ScoreResponse) {}
+}
+
+message RegisterRequest {
+  string username = 1;
 }
 
 message RegisterResponse {
@@ -17,6 +23,7 @@ message RegisterResponse {
 
 message GuessRequest {
   uint64 guess = 1;
+  string username = 2;
 }
 
 message GuessResponse {
@@ -25,4 +32,19 @@ message GuessResponse {
 
 message StartResponse {
   string msg = 1;
+}
+
+message UserResponse {
+  string username = 1;
+}
+
+enum GuessStatus {
+  InProgress = 0;
+  Finished = 1;
+}
+
+message ScoreResponse {
+  string username = 1;
+  uint64 attemptCount = 2;
+  GuessStatus enum = 3;
 }

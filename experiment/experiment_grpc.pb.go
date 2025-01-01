@@ -23,6 +23,8 @@ const (
 	Experiments_Start_FullMethodName     = "/experiment.Experiments/Start"
 	Experiments_Register_FullMethodName  = "/experiment.Experiments/Register"
 	Experiments_MakeGuess_FullMethodName = "/experiment.Experiments/MakeGuess"
+	Experiments_GetUsers_FullMethodName  = "/experiment.Experiments/GetUsers"
+	Experiments_GetScores_FullMethodName = "/experiment.Experiments/GetScores"
 )
 
 // ExperimentsClient is the client API for Experiments service.
@@ -30,8 +32,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExperimentsClient interface {
 	Start(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*StartResponse, error)
-	Register(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	MakeGuess(ctx context.Context, in *GuessRequest, opts ...grpc.CallOption) (*GuessResponse, error)
+	GetUsers(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[UserResponse], error)
+	GetScores(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ScoreResponse], error)
 }
 
 type experimentsClient struct {
@@ -52,7 +56,7 @@ func (c *experimentsClient) Start(ctx context.Context, in *empty.Empty, opts ...
 	return out, nil
 }
 
-func (c *experimentsClient) Register(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*RegisterResponse, error) {
+func (c *experimentsClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, Experiments_Register_FullMethodName, in, out, cOpts...)
@@ -72,13 +76,53 @@ func (c *experimentsClient) MakeGuess(ctx context.Context, in *GuessRequest, opt
 	return out, nil
 }
 
+func (c *experimentsClient) GetUsers(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[UserResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Experiments_ServiceDesc.Streams[0], Experiments_GetUsers_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[empty.Empty, UserResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Experiments_GetUsersClient = grpc.ServerStreamingClient[UserResponse]
+
+func (c *experimentsClient) GetScores(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ScoreResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Experiments_ServiceDesc.Streams[1], Experiments_GetScores_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[empty.Empty, ScoreResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Experiments_GetScoresClient = grpc.ServerStreamingClient[ScoreResponse]
+
 // ExperimentsServer is the server API for Experiments service.
 // All implementations must embed UnimplementedExperimentsServer
 // for forward compatibility.
 type ExperimentsServer interface {
 	Start(context.Context, *empty.Empty) (*StartResponse, error)
-	Register(context.Context, *empty.Empty) (*RegisterResponse, error)
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	MakeGuess(context.Context, *GuessRequest) (*GuessResponse, error)
+	GetUsers(*empty.Empty, grpc.ServerStreamingServer[UserResponse]) error
+	GetScores(*empty.Empty, grpc.ServerStreamingServer[ScoreResponse]) error
 	mustEmbedUnimplementedExperimentsServer()
 }
 
@@ -92,11 +136,17 @@ type UnimplementedExperimentsServer struct{}
 func (UnimplementedExperimentsServer) Start(context.Context, *empty.Empty) (*StartResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
-func (UnimplementedExperimentsServer) Register(context.Context, *empty.Empty) (*RegisterResponse, error) {
+func (UnimplementedExperimentsServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (UnimplementedExperimentsServer) MakeGuess(context.Context, *GuessRequest) (*GuessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MakeGuess not implemented")
+}
+func (UnimplementedExperimentsServer) GetUsers(*empty.Empty, grpc.ServerStreamingServer[UserResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedExperimentsServer) GetScores(*empty.Empty, grpc.ServerStreamingServer[ScoreResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method GetScores not implemented")
 }
 func (UnimplementedExperimentsServer) mustEmbedUnimplementedExperimentsServer() {}
 func (UnimplementedExperimentsServer) testEmbeddedByValue()                     {}
@@ -138,7 +188,7 @@ func _Experiments_Start_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _Experiments_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -150,7 +200,7 @@ func _Experiments_Register_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Experiments_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExperimentsServer).Register(ctx, req.(*empty.Empty))
+		return srv.(ExperimentsServer).Register(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -173,6 +223,28 @@ func _Experiments_MakeGuess_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Experiments_GetUsers_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ExperimentsServer).GetUsers(m, &grpc.GenericServerStream[empty.Empty, UserResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Experiments_GetUsersServer = grpc.ServerStreamingServer[UserResponse]
+
+func _Experiments_GetScores_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ExperimentsServer).GetScores(m, &grpc.GenericServerStream[empty.Empty, ScoreResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Experiments_GetScoresServer = grpc.ServerStreamingServer[ScoreResponse]
+
 // Experiments_ServiceDesc is the grpc.ServiceDesc for Experiments service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -193,6 +265,17 @@ var Experiments_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Experiments_MakeGuess_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetUsers",
+			Handler:       _Experiments_GetUsers_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetScores",
+			Handler:       _Experiments_GetScores_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "experiment.proto",
 }

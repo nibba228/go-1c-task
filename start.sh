@@ -1,0 +1,1 @@
+grpcurl -plaintext -d '{}' localhost:50051  experiment.Experiments.Start
