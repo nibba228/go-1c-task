@@ -7,12 +7,8 @@ import "google/protobuf/empty.proto";
 
 service Experiments {
   rpc Start (google.protobuf.Empty) returns (StartResponse) {}
-  rpc Register (ClientInfo) returns (RegisterResponse) {}
+  rpc Register (google.protobuf.Empty) returns (RegisterResponse) {}
   rpc MakeGuess (GuessRequest) returns (GuessResponse) {}
-}
-
-message ClientInfo {
-  string username = 1;
 }
 
 message RegisterResponse {

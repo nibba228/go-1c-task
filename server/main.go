@@ -8,6 +8,7 @@ import (
 
 	pb "github.com/nibba228/go-1c-task/experiment"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/reflection"
 )
 
 var (
@@ -31,7 +32,7 @@ type Server struct {
 }
 
 
-func (s *Server) Register(ctx context.Context, clientInfo *pb.ClientInfo) (*pb.RegisterResponse, error) {
+func (s *Server) Register(ctx context.Context) (*pb.RegisterResponse, error) {
   _, ok <- s.start
   if !ok {
     return &pb.RegisterResponse{
@@ -54,7 +55,7 @@ func (s *Server) Register(ctx context.Context, clientInfo *pb.ClientInfo) (*pb.R
   mutex.Lock()
   _, ok = s.scoreTable[username]
   if ok {
-    defer mutex.Unlock()
+    mutex.Unlock()
     return &pb.RegisterResponse{
       Status: "a user with the same name has already registered"
     }, error("inappropriate username")
@@ -97,5 +98,6 @@ func main() {
 
   server := grpc.NewServer()
   pb.RegisterExperimentsServer(server, newServer())
+  reflection.Register(server)
   server.Serve(listener)
 }
